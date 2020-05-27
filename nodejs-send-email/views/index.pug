@@ -1,0 +1,91 @@
+extends layout
+block content
+  .container
+    h2 NodeJS Send Email  
+    p Click Send Email to Open a Popup form, Fill in the form and click Send Email.
+    br
+    table.table.table-striped
+      thead
+       tr
+         th First Name
+         th Last Name
+         th Email
+         th Action
+      tbody
+       each subscriber in subscribers
+        tr
+          td #{subscriber['first_name']}
+          td #{subscriber['last_name']}
+          td #{subscriber['email']}
+          td 
+            a(href="javascript:void(0)" data-toggle="modal" data-target="#emailModal" class='js-sendemail' data-email=subscriber['email']) Send Email
+
+  #emailModal.modal.fade(role="dialog")
+      .modal-dialog
+        .modal-content
+          .modal-header
+            button.close(type="button", data-dismiss="modal") ×
+            h4.modal-title NodeJS Send Email
+          .modal-body
+            div#msgdiv.alert.alert-danger(style="display:none")
+
+            form(method="post")
+              input#email.form-control(type="hidden")
+              .form-group
+                label(for="email") Subject:
+                input#subject.form-control(type="text", placeholder="Enter subject", name="subject")
+              .form-group
+                label(for="pwd") Body:
+                textarea#body.form-control(rows="5" placeholder="Email body")
+	     
+              button#btnemail.btn.btn-default(type="button" ) Send Email
+          .modal-footer
+             button.btn.btn-default(type="button", data-dismiss="modal") Close
+
+  script.
+     $( function() {
+       
+       $(".js-sendemail").on('click', function(){
+            var email = $(this).attr('data-email');
+            $("#email").val(email);
+            $("#subject").val('');
+            $("#body").val('');
+            $('#msgdiv').html('');
+       });
+       
+       $("#btnemail").on('click', function(){
+            var email   = $("#email").val();
+            var subject = $("#subject").val();
+            var body    = $("#body").val();
+            if(!subject || !body){
+                $('#msgdiv').html("<strong>Error:</strong> All fields are required").show();
+            }else{
+  
+             $.post( "send_email", {email:email, subject: subject, body:body  })
+
+             .done(function( data ) {
+                  
+                 if(data){
+                   if(data['code'] == 2){ 
+                     $('#msgdiv').removeClass('alert-success').addClass('alert-danger').html("<strong>Error:</strong> All fields are required").show().fadeOut(3000);
+
+                   }else if(data['code'] == 3){ 
+
+                     $('#msgdiv').removeClass('alert-success').addClass('alert-danger').html("<strong>Error:</strong>  Email not sent. Please try again.").show().fadeOut(3000);
+
+                   }else if(data['code'] == 1){ 
+
+                     $('#msgdiv').removeClass('alert-danger').addClass('alert-success').html("<strong>Success:</strong> Email sent successfully. <br /><br />Message URL: "+data['messageURL']).show();
+                   }
+
+                 }else{
+
+                   $('.error').show(3000).html("Email could not be sent. Please try again.").delay(2000).fadeOut(1000);
+                 }
+
+              });
+            }
+       });
+      
+        
+     });
